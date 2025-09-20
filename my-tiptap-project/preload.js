@@ -1,3 +1,6 @@
-window.myAPI = {
-  myFunction: () => console.log('Hello from preload'),
-};
+const {ipcRenderer} = require('electron/renderer')
+const {contextBridge} = require('electron')
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  saveJSON: (data) => ipcRenderer.send('save-json', data)
+})

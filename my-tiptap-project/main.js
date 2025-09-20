@@ -1,6 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-
+const fs = require('fs')
 function createWindow() {
   const win = new BrowserWindow({
     width: 800,
@@ -8,7 +8,7 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,
-      contextIsolation: false,
+      contextIsolation: true,
     },
   });
 
@@ -20,6 +20,22 @@ function createWindow() {
 }
 
 app.on('ready', createWindow);
+
+ipcMain.on('save-json', async (_event, data) => {
+  const win = BrowserWindow.getFocusedWindow()
+  if (!win) return
+
+  const { filePath } = await dialog.showSaveDialog(win, {
+    title: 'Save JSON',
+    defaultPath: 'document.json',
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  })
+
+  if (filePath) {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
+  }
+})
+
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
