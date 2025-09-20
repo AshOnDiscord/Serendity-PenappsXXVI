@@ -463,6 +463,30 @@ Do NOT say "Here is a brief summary" or anything similar. Just provide the summa
         return jsonify({'error': f'Failed to summarize cluster: {str(e)}'}), 500
 
 
+
+@app.route('/all_data', methods=['GET'])
+def get_all_data():
+    """Return all website data from Supabase as JSON"""
+    try:
+        # Fetch all rows from the website table
+        response = supabase.table("website").select("*").execute()
+        
+        if not response.data:
+            return jsonify({'data': [], 'message': 'No websites found'}), 200
+        
+        return jsonify({
+            'success': True,
+            'count': len(response.data),
+            'data': response.data
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error fetching all data: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': 'Failed to fetch all data'}), 500
+
+
+
 if __name__ == '__main__':
     print("Starting Website Processing API Server...")
     print("Available endpoints:")
@@ -472,5 +496,6 @@ if __name__ == '__main__':
     print("  GET  /stats                    - Database statistics (total websites, cluster distribution)")
     print("  GET  /list_websites            - List all websites (id, url, cluster)")
     print("  GET  /summarize_cluster/<id>   - Summarize all websites in a specific cluster using Cerebras API")
+    print("  GET  /all_data/                - Get all")
 
     app.run(debug=True, host='0.0.0.0', port=5000)
