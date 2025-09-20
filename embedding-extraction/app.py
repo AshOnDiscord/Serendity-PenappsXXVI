@@ -487,6 +487,43 @@ def get_all_data():
 
 
 
+@app.route('/all_data_paired', methods=['GET'])
+def get_all_data_paired():
+    """Return all websites paired with their embeddings as a 2D list"""
+    try:
+        # Fetch all rows from the website table
+        response = supabase.table("website").select("url, embedding").execute()
+        
+        if not response.data:
+            return jsonify({'data': [], 'message': 'No websites found'}), 200
+        
+        # Create 2D list: [url, embedding]
+        paired_list = []
+        for row in response.data:
+            url = row.get('url')
+            embedding = row.get('embedding')
+            if embedding:  # Only include if embedding exists
+                # Convert numpy strings to float list if needed
+                if isinstance(embedding, str):
+                    if embedding.startswith("np.str_('") and embedding.endswith("')"):
+                        embedding = embedding[9:-2]
+                    if embedding.startswith('[') and embedding.endswith(']'):
+                        embedding = eval(embedding)
+                embedding_list = [float(x) for x in embedding]
+                paired_list.append([url, embedding_list])
+        
+        return jsonify({
+            'success': True,
+            'count': len(paired_list),
+            'data': paired_list
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error fetching paired data: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': 'Failed to fetch paired data'}), 500
+
+
 if __name__ == '__main__':
     print("Starting Website Processing API Server...")
     print("Available endpoints:")
