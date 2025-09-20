@@ -1,4 +1,5 @@
 import cssText from "data-text:~style.css"
+import { Bookmark } from "lucide-react"
 import type { PlasmoCSConfig } from "plasmo"
 import { useReducer } from "react"
 
@@ -32,34 +33,44 @@ const PlasmoOverlay = () => {
         <div className="plasmo-px-5 plasmo-py-[1.375rem]">
           <h1 className="plasmo-font-[Mortend-Bold] plasmo-text-xl">SEN_DEX</h1>
           <div className="plasmo-flex plasmo-flex-col plasmo-gap-4">
-            <div className="plasmo-flex plasmo-gap-1.5">
-              <button
-                className={
-                  "plasmo-flex plasmo-items-center plasmo-justify-center plasmo-rounded-md plasmo-w-10 plasmo-h-10 " +
-                  (isDark
-                    ? "plasmo-bg-[rgba(255,255,255,0.1)]"
-                    : "plasmo-bg-[rgba(0,0,0,0.1)]")
-                }>
-                B
+            <div className="plasmo-flex plasmo-gap-1.5 plasmo-h-10">
+              <button className="plasmo-flex">
+                <Glass
+                  topStyle="plasmo-w-10 plasmo-flex plasmo-items-center plasmo-justify-center [--corner-radius:0.5rem!important] plasmo-border plasmo-border-white plasmo-rounded-[0.5rem]"
+                  styler={
+                    isDark
+                      ? "plasmo-bg-[rgba(255,255,255,0.1)]"
+                      : "plasmo-bg-[rgba(0,0,0,0.1)]"
+                  }>
+                  <Bookmark className="plasmo-w-4 plasmo-h-4" />
+                </Glass>
               </button>
-              <button
-                className={
-                  "plasmo-flex plasmo-items-center plasmo-justify-center plasmo-rounded-md plasmo-w-36 " +
-                  (isDark
-                    ? "plasmo-bg-[rgba(255,255,255,0.1)]"
-                    : "plasmo-bg-[rgba(0,0,0,0.1)]")
-                }>
-                Research
+              <button className="plasmo-flex plasmo-font-[Mortend-Bold] plasmo-text-xs">
+                <Glass
+                  topStyle="plasmo-w-36 plasmo-flex plasmo-items-center plasmo-justify-center [--corner-radius:0.5rem!important] plasmo-border plasmo-border-white plasmo-rounded-[0.5rem]"
+                  styler={
+                    isDark
+                      ? "plasmo-bg-[rgba(255,255,255,0.1)]"
+                      : "plasmo-bg-[rgba(0,0,0,0.1)]"
+                  }>
+                  Research
+                </Glass>
               </button>
             </div>
-            <div
-              className={
-                "plasmo-flex plasmo-items-center plasmo-justify-center plasmo-h-10 plasmo-rounded-md " +
-                (isDark
-                  ? "plasmo-bg-[rgba(255,255,255,0.1)]"
-                  : "plasmo-bg-[rgba(0,0,0,0.1)]")
-              }>
-              <button>+</button>
+            <div className="plasmo-grid">
+              <button className="plasmo-grid plasmo-h-10">
+                <Glass
+                  topStyle="plasmo-flex plasmo-items-center plasmo-justify-center [--corner-radius:0.5rem!important] plasmo-border plasmo-border-white  plasmo-rounded-[0.5rem]"
+                  styler={
+                    isDark
+                      ? "plasmo-bg-[rgba(255,255,255,0.1)]"
+                      : "plasmo-bg-[rgba(0,0,0,0.1)]"
+                  }>
+                  <span className="plasmo-text-orange-700 plasmo-text-xl">
+                    +
+                  </span>
+                </Glass>
+              </button>
             </div>
           </div>
         </div>
