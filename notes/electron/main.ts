@@ -1,9 +1,12 @@
 import { app, BrowserWindow } from "electron";
-import { createRequire } from "node:module";
+// import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import express, { RequestHandler } from "express";
+import bodyParser from "body-parser";
+import cleanURL from "./cleanUrl";
 
-const require = createRequire(import.meta.url);
+// const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // The built directory structure
@@ -69,3 +72,97 @@ app.on("activate", () => {
 });
 
 app.whenReady().then(createWindow);
+
+const api = express();
+api.use(bodyParser.json());
+
+// api.get("/ping", (req, res) => {
+//   res.json({ message: "pong" });
+// });
+
+interface ServerTabAPI {
+  type: "UPDATE" | "REMOVE";
+  isActive?: boolean;
+  tabId: number;
+  url?: string;
+  timestamp: number;
+}
+
+let currentTab:
+  | {
+      tabId: number;
+      url?: string;
+      startTimestamp: number;
+    }
+  | undefined = undefined;
+
+const tabs: {
+  tabId: number;
+  url?: string;
+  duration: number;
+}[] = [];
+
+api.post("/tab-update", ((req, res) => {
+  const url = req.body.url;
+  const data = { ...req.body, url: url ? cleanURL(url) : url } as ServerTabAPI;
+  if (data.type === "REMOVE") {
+    // remove from tab list
+    const index = tabs.findIndex((t) => t.tabId === data.tabId);
+    let duration = 0;
+    if (currentTab && currentTab.tabId === data.tabId) {
+      duration = data.timestamp - currentTab.startTimestamp;
+    }
+    if (index !== -1) {
+      tabs[index].duration += duration;
+      updateDBSite(tabs[index]);
+      tabs.splice(index, 1);
+    }
+  } else if (data.type === "UPDATE") {
+    // check if we need to add a new tab
+    const index = tabs.findIndex((t) => t.tabId === data.tabId);
+    if (index === -1) {
+      if (data.url) {
+        tabs.push({
+          tabId: data.tabId,
+          url: data.url,
+          duration: 0,
+        });
+      }
+    } else {
+      // check if we need to the url
+      if (data.url && tabs[index].url !== data.url) {
+        if (currentTab && currentTab.tabId === data.tabId) {
+          tabs[index].duration += data.timestamp - currentTab.startTimestamp;
+        }
+        updateDBSite(tabs[index]);
+        tabs[index].url = data.url;
+        tabs[index].duration = 0; // reset duration for new url
+      }
+    }
+    // check if we need to update current tab
+    if (data.isActive) {
+      if (currentTab && currentTab.tabId !== data.tabId) {
+        // update previous active's duration
+        const prevIndex = tabs.findIndex((t) => t.tabId === currentTab!.tabId);
+        if (prevIndex !== -1) {
+          tabs[prevIndex].duration +=
+            data.timestamp - currentTab.startTimestamp;
+        }
+      }
+      currentTab = {
+        tabId: data.tabId,
+        url: data.url,
+        startTimestamp: data.timestamp,
+      };
+    }
+  }
+  res.json({ message: "ok" });
+}) as RequestHandler<object, object, ServerTabAPI>);
+
+const updateDBSite = ({ url, duration }: (typeof tabs)[0]) => {
+  console.log("LINK CLOSED", { url, duration });
+};
+
+api.listen(4000, () => {
+  console.log("API server running at http://localhost:4000");
+});

@@ -1,3 +1,5 @@
+import type { PlasmoCSConfig } from "plasmo"
+
 interface Viewport {
   start: number
   end: number
@@ -7,6 +9,10 @@ interface ElementData {
   topVisible: boolean
   bottomVisible: boolean
   text: string | null
+}
+
+export const config: PlasmoCSConfig = {
+  matches: ["<all_urls>"]
 }
 
 const DEBUG_OUTLINE = false
