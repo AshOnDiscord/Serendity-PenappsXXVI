@@ -107,6 +107,10 @@ def get_existing_embeddings():
         logger.error(f"Error fetching existing data: {e}")
         return []
 
+def clean_text_for_db(text: str) -> str:
+    """Remove characters that PostgreSQL cannot store (e.g., null bytes)"""
+    return text.replace('\x00', '')  # remove null bytes
+
 
 def perform_agglomerative_clustering(embeddings_array, distance_threshold=0.65):
     """Perform agglomerative clustering on embeddings array"""
@@ -250,7 +254,7 @@ def add_website():
         content = scrape_url(url)
         if not content.strip():
             return jsonify({'error': 'No content could be extracted from the URL'}), 400
-        
+        content = clean_text_for_db(content)
         # Step 2: Generate embedding
         logger.info("Generating embedding...")
         truncated_content = truncate_text(content)
@@ -373,13 +377,100 @@ def list_websites():
         return jsonify({'error': 'Failed to list websites'}), 500
 
 
+@app.route('/summarize_cluster/<int:cluster_id>', methods=['GET'])
+def summarize_cluster(cluster_id):
+    """Get all websites in a cluster and generate a summary using Cerebras API"""
+    try:
+        logger.info(f"Fetching websites for cluster {cluster_id}")
+        
+        # Get all rows for the specified cluster
+        response = supabase.table("website").select("id, url, content, cluster").eq("cluster", cluster_id).execute()
+        
+        if not response.data:
+            return jsonify({
+                'error': f'No websites found in cluster {cluster_id}'
+            }), 404
+        
+        # Extract first 1000 characters from each row's content
+        cluster_contents = []
+        website_info = []
+        
+        for row in response.data:
+            content = row.get('content', '')
+            if content:
+                # Get first 1000 characters
+                truncated_content = content[:1000]
+                cluster_contents.append(f"Website: {row['url']}\nContent: {truncated_content}\n{'='*50}\n")
+                website_info.append({
+                    'id': row['id'],
+                    'url': row['url'],
+                    'content_length': len(content)
+                })
+        
+        if not cluster_contents:
+            return jsonify({
+                'error': f'No content found for websites in cluster {cluster_id}'
+            }), 404
+        
+        # Combine all content
+        combined_content = '\n'.join(cluster_contents)
+        
+        logger.info(f"Sending {len(combined_content)} characters to Cerebras API for summarization")
+        
+        # Create prompt for Cerebras API
+        prompt = f"""Please analyze and summarize the following content from {len(response.data)} websites that have been clustered together. Provide a very brief summary (maximum 6 words) that captures the essence of what this cluster represents.
+
+Content from Cluster {cluster_id}:
+
+{combined_content}
+
+Do NOT say "Here is a brief summary" or anything similar. Just provide the summary directly."""
+
+        # Call Cerebras API
+        try:
+            completion = client.chat.completions.create(
+                model="llama-4-scout-17b-16e-instruct",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=2000
+            )
+            
+            summary = completion.choices[0].message.content
+            
+        except Exception as e:
+            logger.error(f"Cerebras API error: {e}")
+            return jsonify({
+                'error': f'Failed to generate summary with Cerebras API: {str(e)}'
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'cluster_id': cluster_id,
+            'website_count': len(response.data),
+            'websites': website_info,
+            'summary': summary,
+            'total_content_chars_analyzed': len(combined_content)
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error summarizing cluster {cluster_id}: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': f'Failed to summarize cluster: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     print("Starting Website Processing API Server...")
     print("Available endpoints:")
-    print("  POST /add_website   - Add a new website (supports distance_threshold parameter)")
-    print("  POST /recluster     - Re-cluster all existing data")
-    print("  GET  /health        - Health check")
-    print("  GET  /stats         - Database statistics")
-    print("  GET  /list_websites - List all websites")
-    
+    print("  POST /add_website              - Add a new website (supports distance_threshold parameter)")
+    print("  POST /recluster                - Re-cluster all existing data (supports distance_threshold parameter)")
+    print("  GET  /health                   - Health check")
+    print("  GET  /stats                    - Database statistics (total websites, cluster distribution)")
+    print("  GET  /list_websites            - List all websites (id, url, cluster)")
+    print("  GET  /summarize_cluster/<id>   - Summarize all websites in a specific cluster using Cerebras API")
+
     app.run(debug=True, host='0.0.0.0', port=5000)
