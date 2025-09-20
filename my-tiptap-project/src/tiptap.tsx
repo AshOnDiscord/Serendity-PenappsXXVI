@@ -1,5 +1,6 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { SimpleEditor } from '../@/components/tiptap-templates/simple/simple-editor'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
@@ -11,6 +12,7 @@ import React, { useState } from "react";
 
 const Tiptap: React.FC = () => {
   const [jsonContent, setJsonContent] = useState<any>(null)
+  const [editorInstance, setEditorInstance] = useState<any>(null);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -26,19 +28,30 @@ const Tiptap: React.FC = () => {
   });
 
   const exportJSON = () => {
-    if (!editor) return
-    const json = editor.getJSON()
-    setJsonContent(json)              // Show JSON on screen
-    window.electronAPI.saveJSON(json) // Save JSON to disk
+    if (!editorInstance) return;
+    const json = editorInstance.getJSON();
+    setJsonContent(json);               // Show JSON on screen
+    window.electronAPI.saveJSON(json);  // Save JSON to disk
+  }
+
+  const importJSON = async () => {
+    const data = await window.electronAPI.openJSON();
+    if (data && editorInstance) {
+      editorInstance.commands.setContent(data);
+      setJsonContent(data);
+    }
   }
 
   return (
   <div>
-    <button onClick={exportJSON} style={{ marginBottom: '20px' }}>
-      Save as JSON
-    </button>
+      <div style={{ marginBottom: '10px' }}>
+        <button onClick={exportJSON} style={{ marginRight: '10px' }}>
+          Save as JSON
+        </button>
+        <button onClick={importJSON}>Import JSON</button>
+      </div>
     
-    <EditorContent editor={editor} className="editor" />
+      <SimpleEditor onEditorReady={(editor: any) => setEditorInstance(editor)} />
 
       {jsonContent && (
         <div style={{ marginTop: '20px' }}>

@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs')
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 800,
@@ -35,6 +36,31 @@ ipcMain.on('save-json', async (_event, data) => {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
   }
 })
+
+
+ipcMain.handle('open-json', async () => {
+  const win = BrowserWindow.getFocusedWindow()
+  if (!win) return null
+
+  const { filePaths } = await dialog.showOpenDialog(win, {
+    title: 'Open JSON',
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+    properties: ['openFile'],
+  })
+
+  if (filePaths && filePaths[0]) {
+    try {
+      const content = fs.readFileSync(filePaths[0], 'utf-8')
+      return JSON.parse(content)
+    } catch (err) {
+      console.error('Failed to read JSON:', err)
+      return null
+    }
+  }
+
+  return null
+})
+
 
 
 app.on('window-all-closed', () => {

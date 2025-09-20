@@ -1,3 +1,6 @@
+@import '/home/thinkies/Git/Serendity-PenappsXXVI/my-tiptap-project/@/styles/_keyframe-animations.scss';
+@import '/home/thinkies/Git/Serendity-PenappsXXVI/my-tiptap-project/@/styles/_variables.scss';
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
