@@ -21,7 +21,7 @@
 
 /* #region glass */
 
-.GlassContainer {
+.Plasmo-GlassContainer {
   --corner-radius: 24px;
   --base-strength: 14px; /* 14 */
   --extra-blur: 4px; /* 8 */

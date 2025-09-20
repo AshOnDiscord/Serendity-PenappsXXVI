@@ -1,7 +1,8 @@
 import cssText from "data-text:~style.css"
 import { Bookmark } from "lucide-react"
+import { AnimatePresence, motion } from "motion/react"
 import type { PlasmoCSConfig } from "plasmo"
-import { useReducer } from "react"
+import React, { useEffect } from "react"
 
 import { Glass } from "~glass"
 
@@ -17,65 +18,82 @@ export const getStyle = () => {
 }
 
 const PlasmoOverlay = () => {
-  const color = document.body.style.backgroundColor
+  const color = window.getComputedStyle(document.body).backgroundColor
   const theme = isLightColor(color)
   const isDark = theme === "dark"
 
+  const [show, setShow] = React.useState(false)
+
+  useEffect(() => {
+    setTimeout(() => {
+      setShow(true)
+    }, 3000)
+  }, [])
+
   return (
-    <div
-      className={`plasmo-font-sans plasmo-fixed plasmo-right-4 plasmo-top-4 plasmo-rounded-2xl`}>
-      <Glass
-        styler={
-          isDark
-            ? "plasmo-bg-[rgba(255,255,255,0.1)]"
-            : "plasmo-bg-[rgba(0,0,0,0.1)]"
-        }>
-        <div className="plasmo-px-5 plasmo-py-[1.375rem]">
-          <h1 className="plasmo-font-[Mortend-Bold] plasmo-text-xl">SEN_DEX</h1>
-          <div className="plasmo-flex plasmo-flex-col plasmo-gap-4">
-            <div className="plasmo-flex plasmo-gap-1.5 plasmo-h-10">
-              <button className="plasmo-flex">
-                <Glass
-                  topStyle="plasmo-w-10 plasmo-flex plasmo-items-center plasmo-justify-center [--corner-radius:0.5rem!important] plasmo-border plasmo-border-white plasmo-rounded-[0.5rem]"
-                  styler={
-                    isDark
-                      ? "plasmo-bg-[rgba(255,255,255,0.1)]"
-                      : "plasmo-bg-[rgba(0,0,0,0.1)]"
-                  }>
-                  <Bookmark className="plasmo-w-4 plasmo-h-4" />
-                </Glass>
-              </button>
-              <button className="plasmo-flex plasmo-font-[Mortend-Bold] plasmo-text-xs">
-                <Glass
-                  topStyle="plasmo-w-36 plasmo-flex plasmo-items-center plasmo-justify-center [--corner-radius:0.5rem!important] plasmo-border plasmo-border-white plasmo-rounded-[0.5rem]"
-                  styler={
-                    isDark
-                      ? "plasmo-bg-[rgba(255,255,255,0.1)]"
-                      : "plasmo-bg-[rgba(0,0,0,0.1)]"
-                  }>
-                  Research
-                </Glass>
-              </button>
-            </div>
-            <div className="plasmo-grid">
-              <button className="plasmo-grid plasmo-h-10">
-                <Glass
-                  topStyle="plasmo-flex plasmo-items-center plasmo-justify-center [--corner-radius:0.5rem!important] plasmo-border plasmo-border-white  plasmo-rounded-[0.5rem]"
-                  styler={
-                    isDark
-                      ? "plasmo-bg-[rgba(255,255,255,0.1)]"
-                      : "plasmo-bg-[rgba(0,0,0,0.1)]"
-                  }>
-                  <span className="plasmo-text-orange-700 plasmo-text-xl">
-                    +
-                  </span>
-                </Glass>
-              </button>
-            </div>
+    <AnimatePresence>
+      {show ? (
+        <motion.div
+          key="box"
+          exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}>
+          <div
+            className={`plasmo-font-sans plasmo-fixed plasmo-right-4 plasmo-top-4 plasmo-rounded-2xl`}>
+            <Glass
+              styler={
+                isDark
+                  ? "plasmo-bg-[rgba(255,255,255,0.1)]"
+                  : "plasmo-bg-[rgba(0,0,0,0.1)]"
+              }>
+              <div className="plasmo-px-5 plasmo-py-[1.375rem]">
+                <h1 className="plasmo-font-[Mortend-Bold] plasmo-text-xl">
+                  SEN_DEX
+                </h1>
+                <div className="plasmo-flex plasmo-flex-col plasmo-gap-4">
+                  <div className="plasmo-flex plasmo-gap-1.5 plasmo-h-10">
+                    <button
+                      className="plasmo-flex"
+                      onClick={() => setShow(false)}>
+                      <Glass
+                        topStyle="plasmo-w-10 plasmo-flex plasmo-items-center plasmo-justify-center [--corner-radius:0.5rem!important] plasmo-border plasmo-border-white plasmo-rounded-[0.5rem]"
+                        styler={
+                          isDark
+                            ? "plasmo-bg-[rgba(255,255,255,0.1)]"
+                            : "plasmo-bg-[rgba(0,0,0,0.1)]"
+                        }>
+                        <Bookmark className="plasmo-w-4 plasmo-h-4" />
+                      </Glass>
+                    </button>
+                    <button
+                      className="plasmo-grid plasmo-h-10 plasmo-w-36"
+                      onClick={() => setShow(false)}>
+                      <Glass
+                        topStyle="plasmo-flex plasmo-items-center plasmo-justify-center [--corner-radius:0.5rem!important] plasmo-border plasmo-border-white  plasmo-rounded-[0.5rem]"
+                        styler={
+                          isDark
+                            ? "plasmo-bg-[rgba(255,255,255,0.1)]"
+                            : "plasmo-bg-[rgba(0,0,0,0.1)]"
+                        }>
+                        <span
+                          className={
+                            "plasmo-text-xl " +
+                            (isDark
+                              ? "plasmo-text-orange-400"
+                              : "plasmo-text-orange-700 ")
+                          }>
+                          +
+                        </span>
+                      </Glass>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </Glass>
           </div>
-        </div>
-      </Glass>
-    </div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   )
 }
 
