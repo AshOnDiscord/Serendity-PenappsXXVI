@@ -66,3 +66,21 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.items {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  z-index: 100;
+}
+.item {
+  display: block;
+  padding: 8px;
+  cursor: pointer;
+}
+.is-selected {
+  background: #eee;
+}
+.editor {
+  position: relative;
+}

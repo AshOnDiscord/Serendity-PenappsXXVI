@@ -1,13 +1,14 @@
-import React from 'react'
-import TiptapEditor from './TiptapEditor'
+import "./styles.scss";
+import Tiptap from "./tiptap";
 
-function App() {
+const App: React.FC = () => {
   return (
     <div className="App">
-      <h1>My Tiptap Editor</h1>
-      <TiptapEditor />
+      <h1>Hello Vite + Electron</h1>
+      <h2>Start editing to see some magic happen!</h2>
+      <Tiptap />
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;

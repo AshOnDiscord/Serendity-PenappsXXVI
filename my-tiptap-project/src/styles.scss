@@ -1,47 +1,37 @@
-.ProseMirror {
-  padding-inline: 4rem;
-
-  > * + * {
-    margin-top: 0.75em;
-  }
-
-  [data-id] {
-    border: 3px solid #0d0d0d;
-    border-radius: 0.5rem;
-    margin: 1rem 0;
-    position: relative;
-    margin-top: 1.5rem;
-    padding: 2rem 1rem 1rem;
-
-    &::before {
-      content: attr(data-id);
-      background-color: #0d0d0d;
-      font-size: 0.6rem;
-      letter-spacing: 1px;
-      font-weight: bold;
-      text-transform: uppercase;
-      color: #fff;
-      position: absolute;
-      top: 0;
-      padding: 0.25rem 0.75rem;
-      border-radius: 0 0 0.5rem 0.5rem;
-    }
-  }
+.App {
+  font-family: sans-serif;
+  /* text-align: center; */
 }
 
-.drag-handle {
-  align-items: center;
-  background: #f0f0f0;
-  border-radius: 0.25rem;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  cursor: grab;
-  display: flex;
-  height: 1.5rem;
-  justify-content: center;
-  width: 1.5rem;
+.ProseMirror {
+  min-height: 40vh;
+  border: 2px solid peru;
+  border-radius: 10px;
+  outline: none;
+  padding: 1em;
+}
 
-  svg {
-    width: 1.25rem;
-    height: 1.25rem;
-  }
+.items {
+  position: relative;
+  border-radius: 0.25rem;
+  background: white;
+  color: rgba(black, 0.8);
+  overflow: hidden;
+  font-size: 0.9rem;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0px 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0.2rem 0.5rem;
+}
+
+.item.is-selected,
+.item:hover {
+  color: #a975ff;
+  background: rgba(#a975ff, 0.1);
 }
