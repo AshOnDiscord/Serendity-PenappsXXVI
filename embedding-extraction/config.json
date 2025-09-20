@@ -1,0 +1,10 @@
+{
+  "search": {
+    "highlightColor": "#FF0000",
+    "dimColor": "#CCCCCC",
+    "dimOpacity": 0.2
+  },
+  "point": {
+    "size": 5
+  }
+}

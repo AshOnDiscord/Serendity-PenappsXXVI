@@ -70,3 +70,6 @@ done < "$FILENAME"
 
 echo "================================"
 echo "Finished processing $counter URLs from $FILENAME"
+
+
+# embedding-atlas umap_arxiv_dataset.parquet --x x --y y --vector vector --text text
