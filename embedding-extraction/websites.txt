@@ -6,3 +6,4 @@ https://inference-docs.cerebras.ai/quickstart
 https://docs.exa.ai/reference/quickstart
 https://energy-based-transformers.github.io/static/pdfs/paper.pdf
 https://arxiv.org/pdf/1706.03762
+https://arxiv.org/pdf/2509.14360
