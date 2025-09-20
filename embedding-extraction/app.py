@@ -125,7 +125,7 @@ def perform_agglomerative_clustering(embeddings_array, distance_threshold=0.65):
     return cluster_labels
 
 
-def update_all_clusters(distance_threshold=0.5):
+def update_all_clusters(distance_threshold=0.65):
     """Re-cluster all existing data and update cluster assignments"""
     try:
         # Get all existing data with embeddings
@@ -164,7 +164,7 @@ def update_all_clusters(distance_threshold=0.5):
         raise
 
 
-def determine_cluster_agglomerative(new_embedding, existing_data, distance_threshold=0.5):
+def determine_cluster_agglomerative(new_embedding, existing_data, distance_threshold=0.65):
     """Determine cluster for new website using agglomerative clustering"""
     if not existing_data:
         return 0
@@ -234,7 +234,7 @@ def add_website():
             return jsonify({'error': 'URL is required'}), 400
         
         url = data['url'].strip()
-        distance_threshold = data.get('distance_threshold', 0.5)
+        distance_threshold = data.get('distance_threshold', 0.65)
         
         if not url:
             return jsonify({'error': 'URL cannot be empty'}), 400
@@ -310,7 +310,7 @@ def recluster_all():
     """API endpoint to re-cluster all existing data"""
     try:
         data = request.get_json() or {}
-        distance_threshold = data.get('distance_threshold', 0.5)
+        distance_threshold = data.get('distance_threshold', 0.65)
         
         logger.info(f"Re-clustering all data with distance_threshold={distance_threshold}")
         
