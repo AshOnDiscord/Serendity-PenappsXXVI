@@ -8,7 +8,7 @@ from cerebras.cloud.sdk import Cerebras
 client = Cerebras(api_key="csk-k26nnt3e8pkyjmpewjhy462ftm59v2j48p43wtewx3mfyc6h")
 
 # --- Load modified dataset ---
-file_path = "mod_parq.parquet"
+file_path = ".parquet"
 df = pd.read_parquet(file_path)
 
 # --- Identify LOWDENSE points ---

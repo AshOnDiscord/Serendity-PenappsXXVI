@@ -22,21 +22,18 @@ import alphashape
 from shapely.geometry import Point
 import logging
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Initialize services
 client = Cerebras(api_key="csk-k26nnt3e8pkyjmpewjhy462ftm59v2j48p43wtewx3mfyc6h")
 exa = Exa('10ae6ddd-08a8-4248-a244-d9cb355352e1')
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 
 PARQUET_FILE_PATH = "/home/thinkies/Git/Serendity-PenappsXXVI/embedding-extraction/mod_parq.parquet"  # Update this path
-# Supabase configuration
 url = "https://ewypztrcgtezvdvjmmgt.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3eXB6dHJjZ3RlenZkdmptbWd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjYyNDMsImV4cCI6MjA3Mzk0MjI0M30.nTSX4VIbwDdiYjpzvWNapaw9H1hlJOF91dz8aqrpodg"
 supabase: Client = create_client(url, key)
@@ -96,10 +93,8 @@ def get_existing_embeddings():
                         if embedding.startswith("np.str_('") and embedding.endswith("')"):
                             embedding = embedding[9:-2]  # Remove np.str_(' and ')
                         elif embedding.startswith('[') and embedding.endswith(']'):
-                            # Parse as list string
                             embedding = eval(embedding)  # Safe here since we control the data
                     
-                    # Ensure it's a list of floats
                     if isinstance(embedding, (list, np.ndarray)):
                         item['embedding'] = [float(x) for x in embedding]
                         cleaned_data.append(item)
@@ -119,7 +114,7 @@ def get_existing_embeddings():
 
 def clean_text_for_db(text: str) -> str:
     """Remove characters that PostgreSQL cannot store (e.g., null bytes)"""
-    return text.replace('\x00', '')  # remove null bytes
+    return text.replace('\x00', '')
 
 
 def perform_kmeans_clustering(embeddings_array, n_clusters=10, random_state=42):
@@ -137,7 +132,6 @@ def perform_kmeans_clustering(embeddings_array, n_clusters=10, random_state=42):
 def calculate_umap_coordinates(embeddings_array, n_neighbors=10, min_dist=0.1, n_components=2, random_state=42):
     """Calculate UMAP coordinates for the given embeddings array"""
     try:
-        # Adjust n_neighbors if we have fewer samples
         actual_n_neighbors = min(n_neighbors, len(embeddings_array) - 1)
         if actual_n_neighbors < 2:
             actual_n_neighbors = 2
