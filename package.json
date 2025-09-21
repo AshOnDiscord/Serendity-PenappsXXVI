@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.30.0",
+    "@tiptap/extension-document": "^3.4.4"
+  }
+}

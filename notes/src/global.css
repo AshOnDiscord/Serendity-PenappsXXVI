@@ -1,0 +1,68 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import url(https://db.onlinewebfonts.com/c/6182518f7bc0b240b3a35699686e85d5?family=Mortend-Bold);
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/forms";
+
+* {
+  font-family: "Inter", var(--font-sans);
+}
+
+body {
+  @apply bg-[rgb(14,14,17)];
+}
+
+@utility prose-tiptap {
+  --tw-prose-body: rgba(245, 245, 245);
+  --tw-prose-headings: rgba(245, 245, 245);
+  --tw-prose-lead: rgb(245, 245, 245);
+  --tw-prose-links: rgb(245, 245, 245);
+  --tw-prose-bold: rgb(245, 245, 245);
+  --tw-prose-counters: rgb(245, 245, 245);
+  --tw-prose-bullets: rgb(245, 245, 245);
+  --tw-prose-hr: rgba(238, 238, 246, 0.11);
+  --tw-prose-quotes: rgb(245, 245, 245);
+  --tw-prose-quote-borders: rgb(245, 245, 245);
+  --tw-prose-captions: rgb(245, 245, 245);
+  --tw-prose-code: rgb(245, 245, 245);
+  --tw-prose-pre-code: rgb(245, 245, 245);
+  --tw-prose-pre-bg: rgba(232, 232, 253, 0.05);
+  --tw-prose-th-borders: rgb(245, 245, 245);
+  --tw-prose-td-borders: rgb(245, 245, 245);
+}
+
+.editor-navbar {
+  @apply py-2;
+}
+
+.editor-navbar > div {
+  @apply flex gap-0.5;
+}
+
+.editor-navbar > span {
+  height: 1.5rem;
+  width: 1px;
+  background-color: rgba(238, 238, 246, 0.11);
+}
+
+.editor-navbar button {
+  @apply text-[rgba(247,247,253,0.64)] hover:text-[rgba(255,255,255,0.96)] transition-all duration-200 cursor-pointer p-2 rounded-[0.75rem] hover:bg-[rgb(45,45,47)] disabled:text-[rgba(244,244,255,0.37)];
+}
+.editor-navbar button.active {
+  @apply text-[rgb(122,82,255)] bg-[rgba(231,231,243,0.07)];
+}
+
+.editor-navbar button svg {
+  @apply w-4 h-4;
+}
+
+.editor > *:first-child {
+  margin-top: 0 !important;
+}
+.editor > *:first-child > *:first-child {
+  margin-top: 0 !important;
+}
+
+.editor > *:first-child > *:first-child > *:first-child {
+  margin-top: 0 !important;
+}
