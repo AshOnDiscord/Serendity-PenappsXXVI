@@ -1,9 +1,0 @@
-https://arxiv.org/pdf/2509.07604
-https://arxiv.org/pdf/2508.05004
-https://interactivetextbooks.tudelft.nl/showthephysics/Introduction/About.html
-https://arxiv.org/pdf/2005.08100
-https://inference-docs.cerebras.ai/quickstart
-https://docs.exa.ai/reference/quickstart
-https://energy-based-transformers.github.io/static/pdfs/paper.pdf
-https://arxiv.org/pdf/1706.03762
-https://arxiv.org/pdf/2509.14360
