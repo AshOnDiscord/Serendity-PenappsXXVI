@@ -158,6 +158,7 @@ def calculate_umap_coordinates(embeddings_array, n_neighbors=10, min_dist=0.1, n
         raise
 
 
+
 def update_all_clusters(n_clusters=10):
     """Re-cluster all existing data using K-means and update cluster assignments"""
     try:
@@ -197,8 +198,10 @@ def update_all_clusters(n_clusters=10):
         raise
 
 
+
 def determine_cluster_kmeans(new_embedding, existing_data, n_clusters=10):
     """Determine cluster for new website using K-means clustering"""
+
     if not existing_data:
         return 0
     
@@ -322,7 +325,9 @@ def add_website():
             return jsonify({'error': 'URL is required'}), 400
         
         url = data['url'].strip()
+
         n_clusters = data.get('n_clusters', 10)
+
         
         if not url:
             return jsonify({'error': 'URL cannot be empty'}), 400
@@ -487,7 +492,9 @@ def recluster_all():
     """API endpoint to re-cluster all existing data using K-means"""
     try:
         data = request.get_json() or {}
+
         n_clusters = data.get('n_clusters', 10)
+
         
         logger.info(f"Re-clustering all data with K-means using {n_clusters} clusters")
         

@@ -1,10 +1,180 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: "Mortend-Bold";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(data-base64:~/../assets/Mortend-Bold.woff) format("woff");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
 
 #plasmo-shadow-container {
   all: initial;
   box-sizing: border-box;
 }
+
+/* #region glass */
+
+.Plasmo-GlassContainer {
+  --corner-radius: 24px;
+  --base-strength: 14px; /* 14 */
+  --extra-blur: 4px; /* 8 */
+  --softness: 6px; /* 6 */
+  --tint-amount: 0.05;
+  --tint-saturation: 2;
+  --tint-hue: 180deg;
+  --contrast: 1;
+  --brightness: 1;
+  --invert: 10%;
+
+  --total-strength: calc(var(--base-strength) + var(--extra-blur));
+  --edge-width: calc(0.3px + (var(--softness) * 0.1));
+  --emboss-width: calc((var(--softness) * 0.38));
+  --refraction-width: calc((var(--softness) * 0.3));
+
+  position: relative;
+  overflow: visible;
+  pointer-events: none;
+}
+.GlassContent {
+  position: relative;
+  display: block;
+  z-index: 100;
+  overflow: hidden;
+  border-radius: var(--corner-radius);
+  pointer-events: auto;
+}
+.GlassMaterial {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+.GlassMaterial:after {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: var(--corner-radius);
+  /* background-color: rgba(9, 9, 9, 0.05); */
+  /* @apply plasmo-bg-[rgba(0,0,0,0.05)] dark:plasmo-bg-[rgba(255,255,255,0.05)]; */
+}
+
+.GlassMaterial > div {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border-radius: var(--corner-radius);
+  z-index: 2;
+  overflow: hidden;
+}
+
+.GlassMaterial .GlassEdgeReflection {
+  z-index: 4;
+  margin: calc(var(--total-strength) * -1);
+  border-radius: calc(var(--corner-radius) + var(--total-strength));
+  backdrop-filter: blur(var(--total-strength)) brightness(1.2) saturate(1.2);
+  padding: var(--edge-width);
+  border: var(--total-strength) solid transparent;
+  mask:
+    linear-gradient(white 0 0) padding-box,
+    linear-gradient(white 0 0) content-box;
+  mask-composite: exclude, exclude;
+}
+.GlassMaterial .GlassEmbossReflection {
+  backdrop-filter: blur(calc(var(--total-strength) * 1.5)) invert(0.25)
+    brightness(1.11) saturate(1.2) hue-rotate(-10deg) contrast(2.3);
+  padding: var(--emboss-width);
+  border: 0 solid transparent;
+  mask:
+    linear-gradient(white 0 0) padding-box,
+    linear-gradient(white 0 0) content-box;
+  mask-composite: exclude, exclude;
+}
+.GlassMaterial .GlassRefraction {
+  backdrop-filter: invert(0.1) brightness(1.2) contrast(1.5);
+  padding: var(--refraction-width);
+  border: calc(var(--emboss-width)) solid transparent;
+  mask:
+    linear-gradient(white 0 0) padding-box,
+    linear-gradient(white 0 0) content-box;
+  mask-composite: exclude, exclude;
+}
+.GlassMaterial .GlassBlur {
+  backdrop-filter: blur(var(--extra-blur)) brightness(1.25);
+  border-radius: calc(
+    var(--corner-radius) - (var(--emboss-width) + var(--refraction-width))
+  );
+  margin: calc(var(--emboss-width) + var(--refraction-width));
+}
+.GlassMaterial .BlendLayers {
+  z-index: 3;
+  backdrop-filter: blur(
+    calc((var(--softness) * 0.2) + (var(--extra-blur) * 0.2))
+  );
+}
+.GlassMaterial .BlendEdge {
+  z-index: 8;
+  backdrop-filter: blur(calc(var(--edge-width) * 0.4)) contrast(1.6)
+    saturate(1.5);
+
+  backdrop-filter: blur(calc(var(--edge-width) * 0.4));
+  backdrop-filter: blur(0);
+}
+.GlassContainer:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: block;
+  border-radius: var(--corner-radius);
+  backdrop-filter: invert(var(--invert));
+}
+.GlassMaterial:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  display: block;
+  border-radius: var(--corner-radius);
+  padding: 1px;
+  border: 0 solid transparent;
+  background: linear-gradient(
+    155deg,
+    hsla(0, 0%, 100%, 0.15) 0%,
+    hsla(0, 0%, 0%, 0.2) 50%,
+    hsla(0, 0%, 100%, 0.15) 100%
+  );
+  backdrop-filter: invert(0.15) opacity(1);
+  mask:
+    linear-gradient(white 0 0) padding-box,
+    linear-gradient(white 0 0) content-box;
+  mask-composite: exclude, exclude;
+}
+.GlassMaterial .Highlight {
+  z-index: 12;
+  display: block;
+  border-radius: var(--corner-radius);
+  padding: 1px;
+  border: 0 solid transparent;
+  backdrop-filter: brightness(1.2) contrast(1.6) saturate(1.2) opacity(1);
+  mask:
+    linear-gradient(white 0 0) padding-box,
+    linear-gradient(white 0 0) content-box;
+  mask-composite: exclude, exclude;
+}
+.GlassMaterial .Tint {
+  z-index: 9;
+  backdrop-filter: sepia(1) saturate(var(--tint-saturation))
+    hue-rotate(var(--tint-hue)) opacity(var(--tint-amount));
+}
+/* #endregion */
