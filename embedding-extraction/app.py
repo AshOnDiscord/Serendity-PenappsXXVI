@@ -4,6 +4,9 @@ import requests
 from io import BytesIO
 from pdfminer.high_level import extract_text
 from bs4 import BeautifulSoup
+import json
+import os
+import pandas as pd
 from exa_py import Exa
 from cerebras.cloud.sdk import Cerebras
 import numpy as np
@@ -12,6 +15,9 @@ from sklearn.cluster import KMeans
 from supabase import create_client, Client
 import umap
 import traceback
+from sklearn.neighbors import KernelDensity, NearestNeighbors
+import alphashape
+from shapely.geometry import Point
 import logging
 
 # Configure logging
@@ -26,6 +32,8 @@ client = Cerebras(api_key="csk-k26nnt3e8pkyjmpewjhy462ftm59v2j48p43wtewx3mfyc6h"
 exa = Exa('10ae6ddd-08a8-4248-a244-d9cb355352e1')
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
+
+PARQUET_FILE_PATH = "/home/thinkies/Git/Serendity-PenappsXXVI/embedding-extraction/mod_parq.parquet"  # Update this path
 # Supabase configuration
 url = "https://ewypztrcgtezvdvjmmgt.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3eXB6dHJjZ3RlenZkdmptbWd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjYyNDMsImV4cCI6MjA3Mzk0MjI0M30.nTSX4VIbwDdiYjpzvWNapaw9H1hlJOF91dz8aqrpodg"
@@ -637,6 +645,109 @@ Do NOT say "Here is a brief summary" or anything similar. Just provide the summa
 
 
 
+@app.route('/compute_lowdensity', methods=['GET'])
+def compute_lowdensity_points():
+    """
+    Compute lowest-density points (LOWDENSE) from Supabase data
+    and insert/update them in the Supabase 'website' table.
+    GET request, no parameters exposed.
+    """
+    try:
+        n_lowdense = 50
+        bandwidth = 0.1
+        alpha = 0.05
+        n_neighbors = 20
+        max_cv = 0.3
+
+        # Step 1: Fetch existing points from Supabase (ignore id < 1)
+        response = supabase.table("website").select("*").execute()
+        data = [row for row in response.data if row.get('id', 0) >= 1 and row.get('x') is not None and row.get('y') is not None]
+
+        if not data:
+            return jsonify({'error': 'No valid data points found in Supabase'}), 400
+
+        xy = np.array([[row['x'], row['y']] for row in data])
+        vector_len = len(data[0].get('vector', [])) if data[0].get('vector') else 128  # fallback length
+
+        # Step 2: Fit KDE
+        kde = KernelDensity(bandwidth=bandwidth)
+        kde.fit(xy)
+
+        # Step 3: Grid of candidate points
+        grid_res = 200
+        xx, yy = np.meshgrid(
+            np.linspace(xy[:, 0].min(), xy[:, 0].max(), grid_res),
+            np.linspace(xy[:, 1].min(), xy[:, 1].max(), grid_res)
+        )
+        grid_points = np.vstack([xx.ravel(), yy.ravel()]).T
+
+        # Step 4: Keep points inside concave hull (alpha shape)
+        hull_shape = alphashape.alphashape(xy, alpha)
+        inside_mask = np.array([hull_shape.contains(Point(p)) for p in grid_points])
+        inside_points = grid_points[inside_mask]
+
+        if len(inside_points) == 0:
+            return jsonify({'error': 'No grid points inside alpha shape'}), 400
+
+        # Step 5: Compute KDE densities
+        densities = kde.score_samples(inside_points)
+
+        # Step 6: Nearest neighbors metrics
+        nbrs = NearestNeighbors(n_neighbors=n_neighbors).fit(xy)
+        distances, indices = nbrs.kneighbors(inside_points)
+        mean_dists = distances.mean(axis=1)
+        cv_dists = distances.std(axis=1) / mean_dists
+        vectors = xy[indices[:, 1:]] - inside_points[:, None, :]
+        angles = np.arctan2(vectors[..., 1], vectors[..., 0])
+        angle_spread = np.ptp(angles, axis=1)
+        surrounded_mask = angle_spread > (np.pi * 1.5)
+        max_allowed_dist = np.percentile(mean_dists, 75)
+        valid_mask = (mean_dists < max_allowed_dist) & surrounded_mask & (cv_dists < max_cv)
+
+        filtered_points = inside_points[valid_mask]
+        filtered_densities = densities[valid_mask]
+
+        if len(filtered_points) == 0:
+            return jsonify({'error': 'No valid low-density points found'}), 400
+
+        # Step 7: Pick top N lowest-density points
+        lowest_idxs = np.argsort(filtered_densities)[:n_lowdense]
+        lowdense_points = filtered_points[lowest_idxs]
+
+        # Step 8: Prepare LOWDENSE rows
+        new_points = []
+        for i, (x_ld, y_ld) in enumerate(lowdense_points, start=1):
+            lowdense_id = -i  # negative IDs for LOWDENSE
+            row_data = {
+                'id': lowdense_id,
+                'url': f'LOWDENSE_{i}',
+                'content': None,
+                'embedding': [0.0] * vector_len,
+                'cluster': None,
+                'time': None,
+                'x': float(x_ld),
+                'y': float(y_ld),
+            }
+            new_points.append(row_data)
+
+        # Step 9: Upsert LOWDENSE points
+        for row in new_points:
+            supabase.table("website").upsert(row, on_conflict="id").execute()
+
+        return jsonify({
+            'success': True,
+            'lowdense_count': len(new_points),
+            'message': f'Added/Updated {len(new_points)} LOWDENSE points'
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error computing LOWDENSE points: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': f'Failed to compute LOWDENSE points: {str(e)}'}), 500
+
+
+
+
 @app.route('/all_data', methods=['GET'])
 def get_all_data():
     """Return all website data from Supabase as JSON"""
@@ -709,5 +820,6 @@ if __name__ == '__main__':
     print("  GET  /summarize_cluster/<id>   - Summarize all websites in a specific cluster using Cerebras API")
     print("  GET  /all_data/                - Get all data")
     print("  GET  /all_data_paired/         - Get all websites paired with embeddings")
+    print("  GET  /read_parquet             - Read parquet file from predetermined path")
 
     app.run(debug=True, host='0.0.0.0', port=5000)
