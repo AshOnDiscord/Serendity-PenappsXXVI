@@ -1,16 +1,20 @@
-from datasets import load_dataset
+import pandas as pd
+import numpy as np
+import ast
 
-# Load dataset
-print("Loading Qdrant arXiv dataset...")
-ds = load_dataset("Qdrant/arxiv-titles-instructorxl-embeddings")
-ds_subset = ds['train'].select(range(2_000_000))
+# Load the Parquet files
+df_website = pd.read_parquet("website_rows.parquet")
+df_umap = pd.read_parquet("umap_arxiv_dataset.parquet")
 
-# Extract DOI column and convert to PDF links
-pdf_links = [f"https://arxiv.org/pdf/{item['DOI']}.pdf" for item in ds_subset]
+# # Concatenate along rows (if they have the same columns)
 
-# Save to txt file
-with open("arxiv_pdf_links.txt", "w") as f:
-    for link in pdf_links:
-        f.write(link + "\n")
+combined_df = pd.concat([df_website, df_umap], ignore_index=True)
+combined_df['vector'] = combined_df['vector'].apply(lambda x: np.array(x).tolist() if isinstance(x, np.ndarray) else x)
+combined_df['vector'] = combined_df['vector'].apply(lambda x: str(x))
+print(combined_df.shape)
+combined_df['vector'] = combined_df['vector'].apply(lambda x: np.array(ast.literal_eval(x)) if isinstance(x, str) else np.array(x))
+print(combined_df.head())
+combined_df.to_parquet("full_parq.parquet", index=False)
 
-print(f"Saved {len(pdf_links)} PDF links to arxiv_pdf_links.txt")
+print(type(combined_df['vector'].iloc[0]))  # should be <class 'numpy.ndarray'>
+print(combined_df.head())

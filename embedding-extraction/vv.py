@@ -1,40 +1,43 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
 import vec2text
+import torch
+from transformers import AutoModel, AutoTokenizer, PreTrainedTokenizer, PreTrainedModel
 
-
-model_name = "gpt2"  # or any Hugging Face LLM
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
-
-corrector = vec2text.load_pretrained_corrector("gtr-base")  
-
-
-
-def get_hf_embeddings(text_list, model, tokenizer):
-    inputs = tokenizer(text_list, return_tensors="pt", padding=True, truncation=True)
+def get_gtr_embeddings(text_list,
+                      encoder: PreTrainedModel,
+                      tokenizer: PreTrainedTokenizer) -> torch.Tensor:
+    inputs = tokenizer(text_list,
+                      return_tensors="pt",
+                      max_length=128,
+                      truncation=True,
+                      padding="max_length")
+    
     with torch.no_grad():
-        outputs = model.base_model(**inputs, output_hidden_states=True)
-        hidden_state = outputs.hidden_states[-1]  # last layer
-        # mean pooling
-        attention_mask = inputs['attention_mask']
-        embeddings = (hidden_state * attention_mask.unsqueeze(-1)).sum(1) / attention_mask.sum(1).unsqueeze(-1)
+        # Use only the encoder part of the T5 model
+        model_output = encoder.encoder(input_ids=inputs['input_ids'], 
+                                      attention_mask=inputs['attention_mask'])
+        hidden_state = model_output.last_hidden_state
+        embeddings = vec2text.models.model_utils.mean_pool(hidden_state, inputs['attention_mask'])
     return embeddings
 
-texts = [
-    "Jack Morris is a PhD student at Cornell Tech in New York City",
-    "It was the best of times, it was the worst of times..."
-]
+# Load model and tokenizer
+encoder = AutoModel.from_pretrained("sentence-transformers/gtr-t5-base")
+tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/gtr-t5-base")
+corrector = vec2text.load_pretrained_corrector("gtr-base")
 
-embeddings = get_hf_embeddings(texts, model, tokenizer)
+# Get embeddings
+embeddings = get_gtr_embeddings([
+    "Blue",
+    "Red",
+    "Yellow",
+], encoder, tokenizer)
 
-
-inverted_texts = vec2text.invert_embeddings(
-    embeddings=embeddings.cuda(),
+# Invert embeddings
+result = str(vec2text.invert_embeddings(
+    embeddings=embeddings.mean(dim=0, keepdim=True),
     corrector=corrector,
-    num_steps=20,
-    sequence_beam_width=4
-)
+    num_steps=10,
+)[0]).strip()
 
-for text in inverted_texts:
-    print(text)
+
+
+print(result)

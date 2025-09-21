@@ -15,6 +15,7 @@ print("First row values:")
 print(df.iloc[0])
 
 
+
 # Extract x and y coordinates
 xy = df[['x', 'y']].values
 
@@ -67,7 +68,7 @@ filtered_densities = densities[valid_mask]
 
 
 # --- Step 6: Pick top 50 lowest-density surrounded points ---
-n_lowdense = 50
+n_lowdense = 20
 lowest_idxs = np.argsort(filtered_densities)[:n_lowdense]
 lowdense_points = filtered_points[lowest_idxs]
 
