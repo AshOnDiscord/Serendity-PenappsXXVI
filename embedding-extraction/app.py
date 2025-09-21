@@ -926,7 +926,6 @@ Provide a clear, informative summary in 2-3 paragraphs that would help someone u
         logger.error(traceback.format_exc())
         return jsonify({'error': f'Failed to summarize website: {str(e)}'}), 500
 
-
 def get_top_similar_articles(url: str, top_n: int = 3):
     try:
         results = exa.find_similar_and_contents(
