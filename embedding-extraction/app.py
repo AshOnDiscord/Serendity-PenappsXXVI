@@ -815,6 +815,48 @@ def get_all_data_paired():
         return jsonify({'error': 'Failed to fetch paired data'}), 500
 
 
+@app.route('/closest_nodes/<int:node_id>', methods=['GET'])
+def get_closest_nodes(node_id):
+    """
+    Given an ID of a specific node, find the two closest nodes by (x, y) coordinates.
+    """
+    try:
+        # Fetch all nodes with valid coordinates
+        response = supabase.table("website").select("id, url, x, y").execute()
+        data = [row for row in response.data if row.get('x') is not None and row.get('y') is not None]
+
+        # Find the target node
+        target = next((row for row in data if row['id'] == node_id), None)
+        if not target:
+            return jsonify({'error': f'Node with ID {node_id} not found or has no coordinates'}), 404
+
+        target_point = np.array([target['x'], target['y']])
+
+        # Compute distances to all other nodes
+        distances = []
+        for row in data:
+            if row['id'] == node_id:
+                continue
+            point = np.array([row['x'], row['y']])
+            dist = np.linalg.norm(point - target_point)
+            distances.append((row, dist))
+
+        # Sort by distance and pick the 2 closest
+        distances.sort(key=lambda x: x[1])
+        closest_two = [d[0] for d in distances[:2]]
+
+        return jsonify({
+            'success': True,
+            'target': target,
+            'closest_two': closest_two
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error finding closest nodes: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': f'Failed to find closest nodes: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     print("Starting Website Processing API Server...")
     print("Available endpoints:")
