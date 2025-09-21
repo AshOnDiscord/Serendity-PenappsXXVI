@@ -51,7 +51,7 @@ while IFS= read -r url || [ -n "$url" ]; do
         -H "Content-Type: application/json" \
         -d "{
             \"url\": \"$url\",
-            \"distance_threshold\": 0.65
+            \"n_clusters\": 10
         }")
     
     # Check curl exit status
