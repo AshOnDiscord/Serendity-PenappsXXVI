@@ -7,7 +7,7 @@ from datasets import load_dataset
 # --- Step 0: Load dataset ---
 print("Loading Qdrant arXiv dataset...")
 ds = load_dataset("Qdrant/arxiv-titles-instructorxl-embeddings")
-ds_subset = ds['train'].select(range(200_000))
+ds_subset = ds['train'].select(range(2_000_000))
 
 # Convert to pandas DataFrame
 print("Converting to DataFrame...")

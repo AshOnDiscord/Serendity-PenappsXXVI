@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import ast
 from flask_cors import CORS
 import requests
 from io import BytesIO
@@ -919,6 +920,134 @@ def similar_articles():
         logger.error(f"Error in /similar_articles: {e}")
         logger.error(traceback.format_exc())
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+def get_top_similar_articles(url: str, top_n: int = 3):
+    try:
+        results = exa.find_similar_and_contents(
+            url=url,
+            text=True,
+            summary={"query": "Key advancements, details, notes, or applications"},
+        )
+        filtered_results = [res for res in results.results if "recaptcha" not in res.title.lower()]
+
+        sorted_results = sorted(filtered_results, key=lambda x: x.score, reverse=True)
+        top_results = sorted_results[:top_n]
+
+        similar_data = []
+        for res in top_results:
+            similar_data.extend([
+                res.title,
+                res.score,
+                res.url,
+                res.summary,
+            ])
+        while len(similar_data) < top_n * 4:
+            similar_data.extend(["", "", "", ""])
+        return similar_data
+    except Exception as e:
+        print(f"Failed to get similar articles for {url}: {e}")
+        return [""] * (top_n * 4)
+
+
+@app.route('/exa_similar_articles/<int:paper_id>', methods=['GET'])
+def exa_similar_articles(paper_id):
+    """
+    Given a paper ID, return top similar articles using Exa.
+    """
+    try:
+        top_n = int(request.args.get("top_n", 3))  # default to 3 similar articles
+
+        # Step 1: Fetch the paper URL from Supabase
+        response = supabase.table("website").select("url").eq("id", paper_id).execute()
+        if not response.data:
+            return jsonify({'error': f'No paper found with ID {paper_id}'}), 404
+
+        paper_url = response.data[0]["url"]
+        if not paper_url:
+            return jsonify({'error': f'Paper with ID {paper_id} has no URL'}), 400
+
+        # Step 2: Get top similar articles using your Exa function
+        similar_articles_data = get_top_similar_articles(paper_url, top_n=top_n)
+
+        # Step 3: Structure the response in a readable way
+        structured_results = []
+        for i in range(top_n):
+            structured_results.append({
+                'title': similar_articles_data[i*4],
+                'score': similar_articles_data[i*4 + 1],
+                'url': similar_articles_data[i*4 + 2],
+                'summary': similar_articles_data[i*4 + 3]
+            })
+
+        return jsonify({
+            'success': True,
+            'paper_id': paper_id,
+            'paper_url': paper_url,
+            'top_n': top_n,
+            'similar_articles': structured_results
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching Exa similar articles for paper {paper_id}: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': f'Failed to fetch similar articles: {str(e)}'}), 500
+
+@app.route('/subcluster', methods=['POST'])
+def subcluster_websites():
+    """
+    Perform K-means clustering on a subset of websites given their IDs.
+    Expects JSON payload: {"ids": [1, 2, 3], "n_clusters": 3}
+    Returns JSON of cluster assignments.
+    """
+    try:
+        data = request.get_json()
+        if not data or 'ids' not in data:
+            return jsonify({'error': 'Missing "ids" in JSON payload'}), 400
+        
+        website_ids = data['ids']
+        n_clusters = data.get('n_clusters', 3)  # default to 3 clusters
+
+        if not isinstance(website_ids, list) or not website_ids:
+            return jsonify({'error': '"ids" must be a non-empty list'}), 400
+        
+        # Fetch embeddings for the specified IDs
+        response = supabase.table("website").select("id, url, embedding").in_("id", website_ids).execute()
+        subset_data = [row for row in response.data if row.get('embedding')]
+
+        if len(subset_data) < 2:
+            return jsonify({'error': 'Not enough items with embeddings to cluster'}), 400
+        
+        # Convert embeddings to numpy array
+        embeddings_array = np.array([
+            [float(x) for x in (row['embedding'] if isinstance(row['embedding'], list) else eval(row['embedding']))]
+            for row in subset_data
+        ])
+        
+        # Perform K-means clustering
+        kmeans = KMeans(n_clusters=min(n_clusters, len(subset_data)), n_init=10, random_state=42)
+        cluster_labels = kmeans.fit_predict(embeddings_array)
+        
+        # Prepare response
+        clustered_result = []
+        for i, row in enumerate(subset_data):
+            clustered_result.append({
+                'id': row['id'],
+                'url': row['url'],
+                'cluster': int(cluster_labels[i])
+            })
+        
+        return jsonify({
+            'success': True,
+            'n_clusters': n_clusters,
+            'clustered_count': len(clustered_result),
+            'clusters': clustered_result
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in /subcluster: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': f'Failed to perform sub-clustering: {str(e)}'}), 500
+
 
 
 if __name__ == '__main__':
