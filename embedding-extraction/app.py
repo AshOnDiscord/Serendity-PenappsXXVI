@@ -852,6 +852,79 @@ def get_closest_nodes(node_id):
         logger.error(traceback.format_exc())
         return jsonify({'error': f'Failed to find closest nodes: {str(e)}'}), 500
         
+@app.route('/summarize_website/<int:website_id>', methods=['GET'])
+def summarize_website(website_id):
+    """Get a specific website by ID and generate a summary using Cerebras API"""
+    try:
+        logger.info(f"Fetching website with ID {website_id}")
+        
+        # Get the specific website by ID
+        response = supabase.table("website").select("id, url, content, cluster").eq("id", website_id).execute()
+        
+        if not response.data:
+            return jsonify({
+                'error': f'No website found with ID {website_id}'
+            }), 404
+        
+        website = response.data[0]
+        content = website.get('content', '')
+        
+        if not content:
+            return jsonify({
+                'error': f'No content found for website with ID {website_id}'
+            }), 404
+        
+        # Truncate content to first 3000 characters for summarization
+        truncated_content = content[:3000]
+        
+        logger.info(f"Sending {len(truncated_content)} characters to Cerebras API for summarization")
+        
+        # Create prompt for Cerebras API
+        prompt = f"""Please analyze and summarize the following website content. Provide a concise summary that captures the main topic, key points, and purpose of the website.
+
+Website URL: {website['url']}
+Content:
+
+{truncated_content}
+
+Provide a clear, informative summary in 2-3 paragraphs that would help someone understand what this website is about."""
+
+        # Call Cerebras API
+        try:
+            completion = client.chat.completions.create(
+                model="llama-4-scout-17b-16e-instruct",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=500
+            )
+            
+            summary = completion.choices[0].message.content
+            
+        except Exception as e:
+            logger.error(f"Cerebras API error: {e}")
+            return jsonify({
+                'error': f'Failed to generate summary with Cerebras API: {str(e)}'
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'website_id': website_id,
+            'url': website['url'],
+            'cluster': website.get('cluster'),
+            'content_length': len(content),
+            'content_analyzed_chars': len(truncated_content),
+            'summary': summary
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error summarizing website {website_id}: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': f'Failed to summarize website: {str(e)}'}), 500
 
 @app.route("/similar_articles", methods=["GET"])
 def similar_articles():
