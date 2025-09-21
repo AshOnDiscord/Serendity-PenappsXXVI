@@ -8,6 +8,7 @@ import json
 import os
 import pandas as pd
 from exa_py import Exa
+from sklearn.metrics.pairwise import cosine_similarity
 from cerebras.cloud.sdk import Cerebras
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -855,6 +856,69 @@ def get_closest_nodes(node_id):
         logger.error(f"Error finding closest nodes: {e}")
         logger.error(traceback.format_exc())
         return jsonify({'error': f'Failed to find closest nodes: {str(e)}'}), 500
+        
+
+@app.route("/similar_articles", methods=["GET"])
+def similar_articles():
+    try:
+        article_id = request.args.get("id")
+        cutoff = float(request.args.get("cutoff", 0.8))  # default cutoff 0.8
+        cutoff -= 0.5
+        if not article_id:
+            return jsonify({"error": "Missing 'id' parameter"}), 400
+        if not (0 <= cutoff <= 1):
+            return jsonify({"error": "Cutoff must be between 0 and 1"}), 400
+
+        # Fetch the reference article
+        ref_resp = supabase.table("website").select("id, embedding").eq("id", article_id).execute()
+        if not ref_resp.data:
+            return jsonify({"error": f"No article found with ID {article_id}"}), 404
+
+        ref_embedding = ref_resp.data[0]["embedding"]
+        if isinstance(ref_embedding, str):
+            if ref_embedding.startswith("[") and ref_embedding.endswith("]"):
+                ref_embedding = eval(ref_embedding)
+        ref_embedding = np.array(ref_embedding).reshape(1, -1)
+
+        # Fetch all other articles
+        all_resp = supabase.table("website").select("id, url, embedding").neq("id", article_id).execute()
+        if not all_resp.data:
+            return jsonify({"error": "No other articles available"}), 404
+
+        similar_items = []
+        for row in all_resp.data:
+            embedding = row.get("embedding")
+            if not embedding:
+                continue
+            if isinstance(embedding, str):
+                if embedding.startswith("[") and embedding.endswith("]"):
+                    embedding = eval(embedding)
+            embedding = np.array(embedding).reshape(1, -1)
+
+            # Cosine similarity
+            sim = cosine_similarity(ref_embedding, embedding)[0][0]
+            if sim >= cutoff:
+                similar_items.append({
+                    "id": row["id"],
+                    "url": row.get("url"),
+                    "similarity": float(sim)
+                })
+
+        # Sort results by similarity
+        similar_items.sort(key=lambda x: x["similarity"], reverse=True)
+
+        return jsonify({
+            "success": True,
+            "reference_id": article_id,
+            "cutoff": cutoff,
+            "similar_count": len(similar_items),
+            "similar_articles": similar_items
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in /similar_articles: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
