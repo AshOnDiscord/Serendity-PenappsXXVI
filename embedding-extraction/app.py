@@ -21,6 +21,9 @@ from sklearn.neighbors import KernelDensity, NearestNeighbors
 import alphashape
 from shapely.geometry import Point
 import logging
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,8 +31,8 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-client = Cerebras(api_key="")
-exa = Exa('')
+client = Cerebras(api_key=os.getenv('CEREBRAS_KEY'))
+exa = Exa(os.getenv('EXA_KEY'))
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 

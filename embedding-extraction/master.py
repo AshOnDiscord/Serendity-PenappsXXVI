@@ -25,8 +25,8 @@ from sklearn.cluster import AgglomerativeClustering
 import json
 from supabase import create_client, Client
 
-client = Cerebras(api_key="")
-exa = Exa('')
+client = Cerebras(api_key=os.getenv('CEREBRAS_KEY'))
+exa = Exa(os.getenv('EXA_KEY'))
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 
